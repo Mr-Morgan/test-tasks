@@ -68,6 +68,7 @@ std::string decode(const std::string& text_b64) {
             break;
         }// switch ()
     }// for ()
+    text.resize(static_cast<size_t>(text_b64.length()/4*3));
     while (text.back() == '=') text.pop_back();
     return text;
 }// std::string decode()
