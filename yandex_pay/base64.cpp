@@ -20,34 +20,54 @@ std::string encode(const std::string& text) {
     // третий сдвинуть на 6 бит 3-6 биты взять у предыдущего символа с позиций 1-4
     // четвертый симфол результирующей строки - это первые 6 бит третьего символа
     std::string text_b64 {""};
-    char suffix, prefix;
     for (int i = 0; i < text.length(); i++) {
-        prefix = text[i];
-        switch((i+1)%3) {
+        switch ((i+1)%3) {
+        case 1:
+            text_b64 += base64_map[text[i] >> 2];
+            if (i == text.length()-1) text_b64 += base64_map[0];
+            break;
+        case 2:
+            text_b64 += base64_map[((text[i-1] & two_bit) << 4) + (text[i] >> 4)];
+            if (i == text.length()-1) text_b64 += base64_map[0];
+            break;
         case 0:
             text_b64 += base64_map[((text[i-1] & four_bit) << 2) + (text[i] >> 6)];
             text_b64 += base64_map[text[i] & six_bit];
             break;
-
-        case 1:
-            text_b64 += base64_map[text[i] >> 2];
-            if (i == text.length()-1) text_b64 += base64_map[suffix];
-            break;
-
-        case 2:
-            text_b64 += base64_map[((text[i-1] & two_bit) << 4) + (text[i] >> 4)];
-            if (i == text.length()-1) text_b64 += base64_map[suffix];
-            break;
         }// switch()
     }// for ()
-
     for (int i = text.length()%3; i < 3; i++) text_b64 += '=';
-
     return text_b64;
 }// std::string encode()
 
+char mbIndex(const char ch) {
+    //mapBase64ToIndex
+    constexpr char ab_size {26};
+    constexpr char plus_ind {62};
+    constexpr char slesh_ind {63};
+    if (isupper(ch)) return (ch-'A');
+    else if (islower(ch)) return (ch-'a'+ab_size);
+    else if (isdigit(ch)) return (ch-'0'+ab_size+ab_size);
+    else if (ch == '+') return plus_ind;
+    else if (ch == '/') return slesh_ind;
+    return ch;
+}// char mapBase64ToIndex()
+
 std::string decode(const std::string& text_b64) {
     std::string text {""};
-
+    for (int i = 0; i < text_b64.length(); i++) {
+        switch ((i+1)%4) {
+        case 1:
+            text += mbIndex(text_b64[i]) << 2 | (mbIndex(text_b64[i+1]) >> 4) & two_bit;
+            break;
+        case 2:
+            text += mbIndex(text_b64[i]) << 4 | (mbIndex(text_b64[i+1]) >> 2) & four_bit;
+            break;
+        case 3:
+            text += mbIndex(text_b64[i]) << 6 | mbIndex(text_b64[i+1]) & six_bit;
+            break;
+        }// switch ()
+    }// for ()
+    while (text.back() == '=') text.pop_back();
     return text;
 }// std::string decode()
